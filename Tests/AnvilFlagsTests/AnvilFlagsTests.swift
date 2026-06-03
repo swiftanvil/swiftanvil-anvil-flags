@@ -214,28 +214,36 @@ struct FeatureFlagSystemTests {
 struct FeatureFlagsTests {
     @Test("isEnabled via static API")
     func staticIsEnabled() async {
-        await FeatureFlags.configure(sources: [
+        let testSystem = FeatureFlagSystem(sources: [
             InMemoryFeatureFlagSource([FeatureFlagKey("flag"): .bool(true)])
         ])
         
-        let enabled = await FeatureFlags.isEnabled(FeatureFlagKey("flag"))
-        #expect(enabled == true)
+        await FeatureFlags.withSystem(testSystem) {
+            let enabled = await FeatureFlags.isEnabled(FeatureFlagKey("flag"))
+            #expect(enabled == true)
+        }
     }
     
     @Test("value with default")
     func staticValue() async {
-        await FeatureFlags.configure(sources: [
+        let testSystem = FeatureFlagSystem(sources: [
             InMemoryFeatureFlagSource([FeatureFlagKey("count"): .int(5)])
         ])
         
-        let count = await FeatureFlags.value(FeatureFlagKey("count"), as: Int.self, default: 0)
-        #expect(count == 5)
+        await FeatureFlags.withSystem(testSystem) {
+            let count = await FeatureFlags.value(FeatureFlagKey("count"), as: Int.self, default: 0)
+            #expect(count == 5)
+        }
     }
     
     @Test("value falls back to default when missing")
     func staticValueDefault() async {
-        let value = await FeatureFlags.value(FeatureFlagKey("missing"), as: Int.self, default: 42)
-        #expect(value == 42)
+        let testSystem = FeatureFlagSystem()
+        
+        await FeatureFlags.withSystem(testSystem) {
+            let value = await FeatureFlags.value(FeatureFlagKey("missing"), as: Int.self, default: 42)
+            #expect(value == 42)
+        }
     }
     
     @Test("withSystem injects custom system")

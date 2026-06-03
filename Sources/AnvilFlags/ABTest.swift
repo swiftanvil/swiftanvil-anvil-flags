@@ -6,6 +6,7 @@ public struct ABTest: Sendable {
     public let variants: [String]
     
     public init(name: String, variants: [String]) {
+        precondition(!variants.isEmpty, "ABTest must have at least one variant")
         self.name = name
         self.variants = variants
     }
