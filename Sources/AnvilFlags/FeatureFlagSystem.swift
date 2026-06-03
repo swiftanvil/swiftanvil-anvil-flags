@@ -40,7 +40,7 @@ public actor FeatureFlagSystem: Sendable {
     
     /// Assigns a user to an A/B test variant.
     public func abTest(_ test: ABTest, forUser userID: String) -> ABTestAssignment {
-        let variantsKey = test.variants.joined(separator: ",")
+        let variantsKey = test.variants.map { "\($0.count)\($0)" }.joined()
         let cacheKey = "\(userID)|\(test.name)|\(variantsKey)"
         if let cached = abCache[cacheKey] {
             return cached
