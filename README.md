@@ -94,7 +94,7 @@ AnvilFlags
 
 ## Requirements
 
-- iOS 16+ / macOS 13+ / tvOS 16+ / watchOS 9+ / visionOS 1+
+- iOS 18+ / macOS 15+ / tvOS 18+ / watchOS 11+ / visionOS 2+
 - Swift 6.0+
 
 ## License

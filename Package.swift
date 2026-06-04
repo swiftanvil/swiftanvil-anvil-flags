@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "AnvilFlags",
-    platforms: [.iOS(.v16), .macOS(.v13), .tvOS(.v16), .watchOS(.v9), .visionOS(.v1)],
+    platforms: [.iOS(.v18), .macOS(.v15), .tvOS(.v18), .watchOS(.v11), .visionOS(.v2)],
     products: [
         .library(name: "AnvilFlags", targets: ["AnvilFlags"]),
     ],
