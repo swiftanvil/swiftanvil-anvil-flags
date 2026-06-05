@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import AnvilCore
 @testable import AnvilFlags
 
 // MARK: - FeatureFlagKey Tests
@@ -397,6 +398,102 @@ struct JSONFileSourceTests {
         
         // Cleanup
         try? FileManager.default.removeItem(at: fileURL)
+    }
+}
+
+// MARK: - ConfigurationFeatureFlagSource Tests
+
+@Suite("ConfigurationFeatureFlagSource")
+struct ConfigurationFeatureFlagSourceTests {
+    @Test("reads bool from AnvilConfiguration")
+    func readBool() async {
+        let config = AnvilConfiguration()
+        await config.set("feature_a", value: true)
+        let source = ConfigurationFeatureFlagSource(configuration: config)
+        
+        let value = await source.value(for: FeatureFlagKey("feature_a"))
+        #expect(value == .bool(true))
+    }
+    
+    @Test("reads int from AnvilConfiguration")
+    func readInt() async {
+        let config = AnvilConfiguration()
+        await config.set("count", value: 42)
+        let source = ConfigurationFeatureFlagSource(configuration: config)
+        
+        let value = await source.value(for: FeatureFlagKey("count"))
+        #expect(value == .int(42))
+    }
+    
+    @Test("reads double from AnvilConfiguration")
+    func readDouble() async {
+        let config = AnvilConfiguration()
+        await config.set("rate", value: 3.14)
+        let source = ConfigurationFeatureFlagSource(configuration: config)
+        
+        let value = await source.value(for: FeatureFlagKey("rate"))
+        #expect(value == .double(3.14))
+    }
+    
+    @Test("reads string from AnvilConfiguration")
+    func readString() async {
+        let config = AnvilConfiguration()
+        await config.set("endpoint", value: "https://api.example.com")
+        let source = ConfigurationFeatureFlagSource(configuration: config)
+        
+        let value = await source.value(for: FeatureFlagKey("endpoint"))
+        #expect(value == .string("https://api.example.com"))
+    }
+    
+    @Test("returns nil for missing key")
+    func missingKey() async {
+        let config = AnvilConfiguration()
+        let source = ConfigurationFeatureFlagSource(configuration: config)
+        
+        let value = await source.value(for: FeatureFlagKey("missing"))
+        #expect(value == nil)
+    }
+    
+    @Test("allFlags returns all stored flags")
+    func allFlags() async {
+        let config = AnvilConfiguration()
+        await config.set("feature_a", value: true)
+        await config.set("count", value: 10)
+        let source = ConfigurationFeatureFlagSource(configuration: config)
+        
+        let flags = await source.allFlags()
+        #expect(flags.count == 2)
+        #expect(flags[FeatureFlagKey("feature_a")] == .bool(true))
+        #expect(flags[FeatureFlagKey("count")] == .int(10))
+    }
+    
+    @Test("FeatureFlagSystem with configuration source resolves flags")
+    func systemWithConfiguration() async {
+        let config = AnvilConfiguration()
+        await config.set("feature_a", value: true)
+        await config.set("count", value: 10)
+        
+        let system = FeatureFlagSystem(configuration: config)
+        
+        #expect(await system.isEnabled(FeatureFlagKey("feature_a")) == true)
+        #expect(await system.value(for: FeatureFlagKey("count")) == .int(10))
+    }
+    
+    @Test("configuration source is lowest priority")
+    func configurationPriority() async {
+        let config = AnvilConfiguration()
+        await config.set("feature_a", value: false)
+        
+        let system = FeatureFlagSystem(
+            sources: [
+                InMemoryFeatureFlagSource([FeatureFlagKey("feature_a"): .bool(true)])
+            ],
+            configuration: config
+        )
+        
+        // In-memory source should win because it is first
+        let value = await system.value(for: FeatureFlagKey("feature_a"))
+        #expect(value == .bool(true))
     }
 }
 

@@ -1,4 +1,5 @@
 import Foundation
+import AnvilCore
 
 /// The actor-backed system that resolves feature flags.
 public actor FeatureFlagSystem: Sendable {
@@ -11,6 +12,16 @@ public actor FeatureFlagSystem: Sendable {
         bucketing: ABTestBucketingStrategy = StableHashBucketingStrategy()
     ) {
         self.sources = sources
+        self.bucketing = bucketing
+    }
+    
+    /// Creates a system with an `AnvilConfiguration` source appended to the source chain.
+    public init(
+        sources: [FeatureFlagSource] = [],
+        configuration: AnvilConfiguration,
+        bucketing: ABTestBucketingStrategy = StableHashBucketingStrategy()
+    ) {
+        self.sources = sources + [ConfigurationFeatureFlagSource(configuration: configuration)]
         self.bucketing = bucketing
     }
     

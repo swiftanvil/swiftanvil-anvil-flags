@@ -1,4 +1,5 @@
 import Foundation
+import AnvilCore
 
 /// A source of feature flag values.
 public protocol FeatureFlagSource: Sendable {
@@ -12,6 +13,45 @@ public protocol FeatureFlagSource: Sendable {
 extension FeatureFlagSource {
     public func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
         [:]
+    }
+}
+
+// MARK: - Configuration Source
+
+/// A feature flag source backed by `AnvilConfiguration`.
+public struct ConfigurationFeatureFlagSource: FeatureFlagSource {
+    private let configuration: AnvilConfiguration
+    
+    /// Creates a source that reads from the given `AnvilConfiguration`.
+    public init(configuration: AnvilConfiguration) {
+        self.configuration = configuration
+    }
+    
+    public func value(for key: FeatureFlagKey) async -> FeatureFlagValue? {
+        if let boolValue: Bool = await configuration.get(key.rawValue) {
+            return .bool(boolValue)
+        }
+        if let intValue: Int = await configuration.get(key.rawValue) {
+            return .int(intValue)
+        }
+        if let doubleValue: Double = await configuration.get(key.rawValue) {
+            return .double(doubleValue)
+        }
+        if let stringValue: String = await configuration.get(key.rawValue) {
+            return .string(stringValue)
+        }
+        return nil
+    }
+    
+    public func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
+        let allKeys = await configuration.keys
+        var result: [FeatureFlagKey: FeatureFlagValue] = [:]
+        for key in allKeys {
+            if let value = await self.value(for: FeatureFlagKey(key)) {
+                result[FeatureFlagKey(key)] = value
+            }
+        }
+        return result
     }
 }
 
