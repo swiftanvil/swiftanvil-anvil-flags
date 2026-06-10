@@ -1,17 +1,17 @@
-import Foundation
 import AnvilCore
+import Foundation
 
 /// A source of feature flag values.
 public protocol FeatureFlagSource: Sendable {
     /// Returns the value for a given key, or nil if not found.
     func value(for key: FeatureFlagKey) async -> FeatureFlagValue?
-    
+
     /// Returns all flags from this source. Default: empty (sources that don't enumerate).
     func allFlags() async -> [FeatureFlagKey: FeatureFlagValue]
 }
 
-extension FeatureFlagSource {
-    public func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
+public extension FeatureFlagSource {
+    func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
         [:]
     }
 }
@@ -21,12 +21,12 @@ extension FeatureFlagSource {
 /// A feature flag source backed by `AnvilConfiguration`.
 public struct ConfigurationFeatureFlagSource: FeatureFlagSource {
     private let configuration: AnvilConfiguration
-    
+
     /// Creates a source that reads from the given `AnvilConfiguration`.
     public init(configuration: AnvilConfiguration) {
         self.configuration = configuration
     }
-    
+
     public func value(for key: FeatureFlagKey) async -> FeatureFlagValue? {
         if let boolValue: Bool = await configuration.get(key.rawValue) {
             return .bool(boolValue)
@@ -42,12 +42,12 @@ public struct ConfigurationFeatureFlagSource: FeatureFlagSource {
         }
         return nil
     }
-    
+
     public func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
         let allKeys = await configuration.keys
         var result: [FeatureFlagKey: FeatureFlagValue] = [:]
         for key in allKeys {
-            if let value = await self.value(for: FeatureFlagKey(key)) {
+            if let value = await value(for: FeatureFlagKey(key)) {
                 result[FeatureFlagKey(key)] = value
             }
         }
@@ -60,19 +60,19 @@ public struct ConfigurationFeatureFlagSource: FeatureFlagSource {
 /// An in-memory feature flag source. Mutable before configuration.
 public struct InMemoryFeatureFlagSource: FeatureFlagSource {
     private var storage: [FeatureFlagKey: FeatureFlagValue]
-    
+
     public init(_ flags: [FeatureFlagKey: FeatureFlagValue] = [:]) {
-        self.storage = flags
+        storage = flags
     }
-    
+
     public mutating func set(_ value: FeatureFlagValue, for key: FeatureFlagKey) {
         storage[key] = value
     }
-    
+
     public func value(for key: FeatureFlagKey) async -> FeatureFlagValue? {
         storage[key]
     }
-    
+
     public func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
         storage
     }
@@ -85,23 +85,28 @@ public struct JSONFileFeatureFlagSource: FeatureFlagSource {
     private let fileName: String
     private let bundle: Bundle
     private let flags: [FeatureFlagKey: FeatureFlagValue]
-    
+
     public init(fileName: String, bundle: Bundle = .main) throws {
         self.fileName = fileName
         self.bundle = bundle
-        self.flags = try Self.load(fileName: fileName, bundle: bundle)
+        flags = try Self.load(fileName: fileName, bundle: bundle)
     }
-    
+
     public func value(for key: FeatureFlagKey) async -> FeatureFlagValue? {
         flags[key]
     }
-    
+
     public func allFlags() async -> [FeatureFlagKey: FeatureFlagValue] {
         flags
     }
-    
+
     private static func load(fileName: String, bundle: Bundle) throws -> [FeatureFlagKey: FeatureFlagValue] {
-        guard let url = bundle.url(forResource: fileName, withExtension: nil) ?? bundle.url(forResource: fileName, withExtension: "json") else {
+        guard
+            let url = bundle.url(forResource: fileName, withExtension: nil) ?? bundle.url(
+                forResource: fileName,
+                withExtension: "json"
+            )
+        else {
             throw FeatureFlagError.fileNotFound(fileName)
         }
         let data = try Data(contentsOf: url)
@@ -115,7 +120,7 @@ public struct JSONFileFeatureFlagSource: FeatureFlagSource {
         }
         return result
     }
-    
+
     private static func convert(_ value: Any) -> FeatureFlagValue {
         switch value {
         case let bool as Bool:
